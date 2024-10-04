@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>Nice Import XML</name>
+  <code>NiceImportXML</code>
+  <version>1.2.0 (for OpenCart 3.x)</version>
+  <author>&lt;a href=&quot;https://bit.ly/448hMWG&quot; &gt;LetMe.Shop&lt;/a&gt;</author>
+	<link>https://letme.shop/</link>
+
+  <file path="admin/controller/catalog/product.php">
+    <operation>
+      <search><![CDATA[
+        if (isset($this->request->post['price'])) {
+      ]]></search>
+      <add position="before"><![CDATA[		// >>>>>> Nice Import XML . Begin
+		$this->load->language('extension/module/nix_product');
+
+		if (isset($this->request->post['price_purchasing'])) {
+			$data['price_purchasing'] = $this->request->post['price_purchasing'];
+		} elseif (!empty($product_info)) {
+			$data['price_purchasing'] = $product_info['price_purchasing'];
+		} else {
+			$data['price_purchasing'] = '';
+		}
+
+		if (isset($this->request->post['price_rrp'])) {
+			$data['price_rrp'] = $this->request->post['price_rrp'];
+		} elseif (!empty($product_info)) {
+			$data['price_rrp'] = $product_info['price_rrp'];
+		} else {
+			$data['price_rrp'] = '';
+		}
+		// <<<<<< Nice Import XML . End
+]]></add>
+    </operation>
+  </file>
+  
+  <file path="admin/model/catalog/product.php">
+    <operation>
+      <search><![CDATA[
+        price = '" . (float)$data['price'] . "',
+      ]]></search>
+      <add position="replace"><![CDATA[price = '" . (float)$data['price'] . "'," . (isset($data['price_purchasing']) ? "price_purchasing = '" . (float)$data['price_purchasing'] . "', " : '') . (isset($data['price_rrp']) ? "price_rrp = '" . (float)$data['price_rrp'] . "', " : '') . "]]></add>
+    </operation>
+  </file>
+  
+  <file path="admin/view/template/catalog/product_form.twig">
+    <operation>
+      <search><![CDATA[
+        <label class="col-sm-2 control-label" for="input-price">
+      ]]></search>
+      <add position="before" offset="1"><![CDATA[              <!-- >>>>>> Nice Import XML . Begin -->
+              <div class="form-group">
+                <label class="col-sm-2 control-label" for="input-price-purchasing">{{ entry_nix_price_purchasing }}</label>
+                <div class="col-sm-10">
+                  <input type="text" name="price_purchasing" value="{{ price_purchasing }}" placeholder="{{ entry_nix_price_purchasing }}" id="input-price-purchasing" class="form-control"/>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="col-sm-2 control-label" for="input-price-rrp">{{ entry_nix_price_rrp }}</label>
+                <div class="col-sm-10">
+                  <input type="text" name="price_rrp" value="{{ price_rrp }}" placeholder="{{ entry_nix_price_rrp }}" id="input-price-rrp" class="form-control"/>
+                </div>
+              </div>
+              <!-- <<<<<< Nice Import XML . End -->]]></add>
+    </operation>
+  </file>
+  
+</modification>
