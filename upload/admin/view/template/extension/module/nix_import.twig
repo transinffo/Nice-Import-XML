@@ -1,0 +1,484 @@
+{{ header }}
+	<style>
+	.has-error {
+		border-color: #ff0000;
+	}
+	
+	.panel-body {
+		position: relative;
+	}
+	
+	.panel-body.with-loader::before {
+		content: "";
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		background: rgba(255, 255, 255, .5);
+		z-index: 3;
+	}
+	
+	.loader {
+		z-index: 9;
+		position: absolute;
+		display: none;
+		left: 45%;
+		top: 45%;
+		
+		width: 280px;
+		text-align: center;
+	}
+	
+	.loader-dialog {
+		color: #ff0000;
+	}
+	
+	.loader-stopwatch {
+		margin-bottom: 15px;
+	}
+	
+	.loader-icon {
+		display: inline-block;
+		width: 64px;
+		height: 64px;
+		
+    border: 5px solid #8c8d9a; /* bg */
+    border-top: 5px solid #fcb92b; /* primary */
+    border-radius: 50%;
+    
+    animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+	}
+	
+</style>
+{{ column_left }}
+
+<div id="content">
+ <div class="page-header">
+  <div class="container-fluid">
+   <div class="pull-right">
+    <a href="{{ cancel }}" data-toggle="tooltip" title="{{ btn_cancel }}" class="btn btn-warning"><i class="fa fa-reply"></i> {{ btn_cancel }}</a></div>
+   <h1>{{ heading_title }}</h1>
+   <ul class="breadcrumb">
+    {% for breadcrumb in breadcrumbs %}
+    <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+    {% endfor %}
+   </ul>
+  </div>
+ </div>
+ <div class="container-fluid">
+  {% if errors.warning %}
+  <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ errors.warning }}
+   <button type="button" class="close" data-dismiss="alert">&times;</button>
+  </div>
+  {% endif %}
+
+  {% if message_success %}
+  <div class="alert alert-success"><i class="fa fa-exclamation-circle"></i> {{ message_success }}
+   <button type="button" class="close" data-dismiss="alert">&times;</button>
+  </div>
+  {% endif %}
+
+  <div class="panel panel-default">
+   <div class="panel-heading">
+    <h3 class="panel-title"><i class="fa fa-upload"></i> {{ text_edit }}</h3>
+   </div>
+   <div class="panel-body">
+				<div class="module-navigation">
+     <a class="btn btn-default navbar-btn" href="{{ link_part_settings }}"><i class="fa fa-cogs"></i> {{ text_part_settings }}</a>
+     <a class="btn btn-default navbar-btn active" href="{{ link_part_import }}"><i class="fa fa-upload"></i> {{ text_part_import }}</a>
+    </div>
+				<!-- Form . Begin -->
+    <form action="{{ action }}" method="post" enctype="multipart/form-data" id="nix-import--form" class="form-horizontal">
+					
+					<div id="nix-import--answer"></div>
+					
+					<!-- Loader -->
+					<div class="loader">
+						<div class="loader-dialog"></div>
+						<div class="loader-statistics"></div>
+						<div class="loader-stopwatch timerDisplay">00 : 00 : 00 : 000</div>
+						<div class="loader-icon"></div>
+					</div> 
+					
+					<!-- Delete All -->
+					<div class="form-group">
+						<label class="col-sm-2 control-label"></label>
+						<div class="col-sm-10">
+							<div class="checkbox">
+								<label><input type="checkbox" name="delete_all" value="1" {{ delete_all ? 'checked="checked"' : '' }}> {{ entry_delete_all }}</label>
+								<span class="help-block"><span class="text-warning bg-warning">{{ help_delete_all }}</span></span>
+							</div>
+						</div>
+					</div>
+					
+					<!-- Supplier -->
+					<div class="form-group required">
+						<label class="col-sm-2 control-label" for="input-supplier">{{ entry_supplier }}</label>
+						<div class="col-sm-10">
+							<select name="supplier_id" id="input-supplier" class="form-control">
+								<option value="*">{{ text_select_option }}</option>
+								{% for supplier in supplier_list %}
+        <option value="{{ supplier.supplier_id }}" {{ supplier_id == supplier.supplier_id ? 'selected="selected"' : '' }}>{{ supplier.name }}</option>
+								{% endfor %}
+       </select>
+							{% if errors.supplier_id %}
+							<div class="text-danger">{{ errors.supplier_id }}</div>
+						{% endif %}
+						</div>
+					</div>
+					
+					<!-- XML File -->
+					<div class="form-group required">
+      <label class="col-sm-2 control-label" for="input-xmllink"><span data-toggle="tooltip" title="{{ help_file }}">{{ entry_file }}</span></label>
+      <div class="col-sm-10">	
+							
+						{% for language in languages %}
+							{% if loop.index > 0 %}<hr style="border-style: dashed; border-color: #ccc; margin: 15px 0 0 0;">{% endif %}
+							
+							{% if is_multilingual %}
+							<div class="radio" style="margin-bottom: 10px;">
+								<label style="color: initial;"><input type="radio" name="language_id" value="{{ language.language_id }}" {{ language.language_id == language_id or i == 0 and language_id == 0 ? 'checked' : '' }}> <img src="{{ language.src }}" title="{{ language.name }}" /> {{ language.name }}{{ entry_language }}</label>
+							</div>
+							{% else %} 
+							<input type="hidden" name="language_id" value="{{ language.language_id }}" checked />
+							{% endif %}
+							
+							<!--<input type="text" name="xmllink[{{ language.language_id }}]" placeholder="{{ entry_xmllink }}" id="input-xmllink" class="form-control" />-->
+							
+							<!--<div>{{ xor }}</div>-->
+
+							<div class="input-group">
+								<label class="input-group-btn">
+									<input name="xmlfile[{{ language.language_id }}]" type="file" id="input-xmlfile-{{ language.language_id }}" style="display: none;" />
+									<div class="btn btn-info" style="border-radius: 3px 0 0 3px">{{ btn_file }}</div>
+								</label>
+								<input type="text" class="form-control" id="xmlfile-status-{{ language.language_id }}" value="..." readonly>
+							</div>
+							
+							{% if errors.xmlfile[language.language_id] %}
+							<div class="text-danger">{{ errors.xmlfile[language.language_id] }}</div>
+							{% endif %}
+							
+							<script>
+								$(document).ready(function () {
+									$('#input-xmlfile-{{ language.language_id }}').change(function () {
+										var f_name = [];
+										for (var i = 0; i < $(this).get(0).files.length; ++i) {
+											f_name.push(" " + $(this).get(0).files[i].name);
+										}
+										$('#xmlfile-status-{{ language.language_id }}').val(f_name.join(", "));
+									});
+								});
+							</script>
+							{% endfor %}
+
+      </div>							
+     </div>					
+				
+    <hr>
+				<!-- Import Options -->
+				<div class="form-group">
+					<label class="col-sm-2 control-label">{{ text_import_options }}</label>
+					<div class="col-sm-10">
+						<div class="checkbox">
+							<label><input type="checkbox" name="update_if_exist" value="1" {{ update_if_exist ? 'checked="checked"' : '' }}> {{ entry_update_if_exist }}</label>
+							<span class="help-block"><span class="text-primary">{{ help_update_if_exist }}</span></span>
+						</div>				
+						{% if is_multilingual %}
+						<hr>
+						<div class="checkbox">
+							<label><input type="checkbox" name="copy_description" id="copy-description" value="1" {{ copy_description ? 'checked="checked"' : '' }}> {{ entry_copy_description }}</label>
+						</div>
+						<hr>
+						<div class="checkbox">
+							<label><input type="checkbox" name="copy_attributes" id="copy-attributes" value="1" {{ copy_attributes ? 'checked="checked"' : '' }}> {{ entry_copy_attributes }}</label>
+							<span class="help-block"><span class="text-primary">{{ help_copy_attributes }}</span></span>
+						</div>
+						{% endif %}
+					</div>
+				</div>
+				
+				
+				
+				
+				
+    <hr>
+				
+    <button type="submit" class="btn btn-primary" id="nix-import--btn">{{ btn_import }}</button>
+				
+    </form>
+				<!-- /Form . End-->
+				
+   </div>
+  </div>
+		
+		<div class="row">
+			<div class="col-sm-12">{{ text_copyright }}</div>
+		</div>
+		
+ </div>
+	
+</div>
+
+
+<script>
+	
+	function toggleCopuAttributes() {
+		if ($('#copy-description').is(':checked')) {
+			$('#copy-attributes').attr('disabled', false);
+			
+			$('#copy-attributes').parent('label').css('color', 'initial');
+			$('#copy-attributes').parent('label').next('.help-block').children('.text-primary').css('color', '#1e91cf');
+		} else {
+			$('#copy-attributes').attr('disabled', true);
+			
+			$('#copy-attributes').parent('label').css('color', '#ccc');
+			$('#copy-attributes').parent('label').next('.help-block').children('.text-primary').css('color', '#ccc');
+			
+			if ($('#copy-attributes').is(':checked')) {			
+				$('#copy-attributes').attr('checked', false);
+			}
+		}
+	}
+	
+	toggleCopuAttributes();
+	
+	$('#copy-description').change(function() {
+		toggleCopuAttributes();
+	});
+	
+
+	$('#nix-import--form').on('submit', function (e) {
+    e.preventDefault();
+		
+		var dataImport = new FormData(this); // to send files it is necessary FormData(), not serialize()
+		
+		dataImport.append('nix_new_submit', 1);
+		
+		$.ajax({
+			url: 'index.php?route=extension/module/nix/processingImportAjax&user_token={{ user_token }}',
+			type: 'POST',
+			dataType: 'json',
+			contentType: false, // to have regular post field with FormData() obj
+			cache: false,
+			processData: false, // to send a DOMDocument
+			data: dataImport,
+			beforeSend: function() {
+				$('#nix-import--form .form-control').removeClass('has-error');				
+				$('#nix-import--answer').html('');				
+				$('.loader-dialog').html('{{ status_started }}');
+				
+				// A! NOT only for this request!
+				loaderOn(); // contain other on start actions
+			},
+			success: function (json) {
+				console.log('Success httpResponse');
+				console.debug(json);
+
+				if ('Finish' == json['status']) {
+					console.log('Import Finish by a request!');
+					
+					$('#nix-import--answer').html('<div class="alert alert-success">' + json['msg'] + json['statistics'] + '</div>');
+					
+					if (false != json['warnings']) {
+						$('#nix-import--answer').append('<div class="alert alert-warning">' + json['warnings'] + '</div>');
+					}
+					
+					loaderOff(); // contain other on stop actions
+					
+				} else if ('Continue' == json['status']) {
+					console.log('Import Continue');
+					
+					$('.loader-statistics').html(json['statistics']);
+					
+					// !A Note 3:A
+					// Not off loader while loop not finished		
+					loopQueries();
+					
+				} else if ('Error' == json['status']) {
+					console.log('Import Error');
+
+					$('#nix-import--answer').html('<div class="alert alert-danger">' + json['msg'] + '</div>');
+
+					if ('undefined' !== typeof json['errors']['supplier_id']) {
+						$('#input-supplier').addClass('has-error');
+					}
+
+					if ('undefined' !== typeof json['errors']['xmlfile']) {
+						{% for language in languages %}
+						if ('undefined' !== typeof json['errors']['xmlfile'][{{ language.language_id }}]) {
+							$('#xmlfile-status-{{ language.language_id }}').addClass('has-error');
+						}
+						{% endfor %}
+					}
+					
+					// !A Note 3:B
+					//  If there are errors in the form - it is necessary to edit fields and send request again
+					loaderOff(); // contain other on stop actions
+				}
+			},
+			error: function (jqXHR, textStatus, errorThrown) {
+				// Error ajax query
+				console.log('AJAX query Error: ' + textStatus);
+			}
+		});
+		
+	});
+	
+	var i = 1;
+	
+	async function loopQueries() {
+		var dataImport = $('#nix-import--form').serialize(); // Note-4:B -- not send files again
+			
+		await $.ajax({
+			url: 'index.php?route=extension/module/nix/processingImportAjax&user_token={{ user_token }}',
+			type: 'POST',
+			dataType: 'json',
+			data: dataImport,
+			success: function (json) {
+				console.log('Success httpResponse : ' + i);
+				console.debug(json);
+
+				if ('Finish' == json['status']) {
+					console.log('Import Finish by the Loop');
+
+					$('#nix-import--answer').html('<div class="alert alert-success">' + json['msg'] + json['statistics'] + '</div>');
+					
+					if (false != json['warnings']) {
+						$('#nix-import--answer').append('<div class="alert alert-warning">' + json['warnings'] + '</div>');
+					}
+
+					// !A Note 3:C
+					// If import is finihed by the loop
+					loaderOff();					
+
+				} else if ('Continue' == json['status']) {
+					console.log('Import Continue : ' + i);
+					
+					$('.loader-statistics').html(json['statistics']);
+
+					i++;
+
+					loopQueries();
+				}
+			},
+			error: function (jqXHR, textStatus, errorThrown) {
+				console.log('AJAX query Error in loopQueries() - ' +  i + ' : ' + textStatus);
+			}
+		});
+	}
+	
+	function loaderOn() {
+		$('.panel-body').addClass('with-loader');
+		$('.loader').show();
+		
+		$('#nix-import--btn').attr('disabled', true);
+		
+		startStopwatch();	
+	}
+	
+	function loaderOff() {
+		$('.loader').hide();
+		$('.panel-body').removeClass('with-loader');
+		
+		$('#nix-import--btn').attr('disabled', false);
+		
+		resetStopwatch();
+		
+		$('.loader-statistics').html('');
+	}
+	
+
+
+/* Time Counter
+ ---------------------------------------------------------------- */
+// Source: https://foolishdeveloper.com/create-a-simple-stopwatch-using-javascript-tutorial-code/
+// It's modified by ChatGPT to count time when switch the browser tab
+
+let timerWorker = null;
+let timerRef = document.querySelector('.timerDisplay');
+
+function startStopwatch() {
+	if (timerWorker === null) {
+		const workerCode = `
+			let [milliseconds, seconds, minutes, hours] = [0, 0, 0, 0];
+			let int = null;
+
+			function displayStopwatch() {
+				milliseconds += 10;
+				if (milliseconds == 1000) {
+					milliseconds = 0;
+					seconds++;
+					if (seconds == 60) {
+						seconds = 0;
+						minutes++;
+						if (minutes == 60) {
+							minutes = 0;
+							hours++;
+						}
+					}
+				}
+				let h = hours < 10 ? '0' + hours : hours;
+				let m = minutes < 10 ? '0' + minutes : minutes;
+				let s = seconds < 10 ? '0' + seconds : seconds;
+				let ms = milliseconds < 10 ? '00' + milliseconds : milliseconds < 100 ? '0' + milliseconds : milliseconds;
+
+				postMessage(\` \${h} : \${m} : \${s} : \${ms}\`); // Отправляем обновленное время основному потоку
+			}
+
+			function startTimer() {
+				if (int !== null) {
+					clearInterval(int);
+				}
+				int = setInterval(displayStopwatch, 10);
+			}
+
+			function stopTimer() {
+				clearInterval(int);
+				int = null;
+			}
+
+			onmessage = function(event) {
+				let command = event.data;
+
+				switch (command) {
+					case 'start':
+						startTimer();
+						break;
+					case 'stop':
+						stopTimer();
+						break;
+				}
+			};
+		`;
+
+		const blob = new Blob([workerCode], { type: 'application/javascript' });
+		const workerURL = URL.createObjectURL(blob);
+
+		timerWorker = new Worker(workerURL); // Создаем Web Worker
+		timerWorker.onmessage = function(event) {
+			timerRef.innerHTML = event.data; // Обновляем таймер на основной странице
+		};
+	}
+
+	timerWorker.postMessage('start'); // Запускаем таймер в Web Worker
+}
+
+function resetStopwatch() {
+	if (timerWorker !== null) {
+		timerWorker.terminate(); // Останавливаем Web Worker
+		timerWorker = null;
+	}
+
+	timerRef.innerHTML = '00 : 00 : 00 : 000 ';
+}
+
+
+</script>
+
+
+{{ footer }}
